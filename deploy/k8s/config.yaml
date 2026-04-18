@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubeaudit-revamp-config
+  namespace: kubeaudit-revamp
+data:
+  APP_ENV: "production"
+  PORT: "8080"
+  LOG_LEVEL: "info"
+  REDIS_ADDR: "redis:6379"
+  REDIS_DB: "0"
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_NAME: "kubeaudit"
+  DB_USER: "kubeaudit"
+  DB_SSLMODE: "disable"
+  USE_MEMORY_STORE: "false"
+  READ_TIMEOUT_MS: "8000"
+  EXPENSIVE_RATE_RPS: "3"
+  EXPENSIVE_RATE_BURST: "8"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kubeaudit-revamp-secret
+  namespace: kubeaudit-revamp
+type: Opaque
+stringData:
+  JWT_SECRET: "change-me"
+  REDIS_PASSWORD: ""
+  DB_PASSWORD: "change-me"
+

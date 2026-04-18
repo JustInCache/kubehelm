@@ -1,0 +1,11 @@
+api:
+  image: kubeaudit-revamp-api:latest
+  replicas: 2
+frontend:
+  image: kubeaudit-revamp-frontend:latest
+  replicas: 2
+redis:
+  image: redis:7-alpine
+jwtSecret: "change-me"
+dbPassword: "change-me"
+

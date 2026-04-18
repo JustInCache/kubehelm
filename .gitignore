@@ -1,0 +1,44 @@
+# Secrets & config — never commit
+.env
+.env.*
+!env.example
+*.pem
+*.key
+*.crt
+kubeconfig*
+*kubeconfig*
+
+# Build artefacts
+/tmp/
+*.log
+dist/
+build/
+/tmp/kubehelm-api
+
+# Go
+vendor/
+*.test
+*.out
+coverage.txt
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+
+# OS & editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation
+*.md
+docs/
+
+# Misc
+__pycache__/
+*.py[cod]

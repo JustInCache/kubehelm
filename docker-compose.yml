@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kubeaudit
+      POSTGRES_PASSWORD: kubeaudit_secret
+      POSTGRES_DB: kubeaudit
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6381:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      PORT: "8080"
+      APP_ENV: development
+      LOG_LEVEL: info
+      JWT_SECRET: dev-secret-change-me
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: "0"
+      READ_TIMEOUT_MS: "8000"
+      EXPENSIVE_RATE_RPS: "3"
+      EXPENSIVE_RATE_BURST: "8"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: kubeaudit
+      DB_USER: kubeaudit
+      DB_PASSWORD: kubeaudit_secret
+      DB_SSLMODE: disable
+      USE_MEMORY_STORE: "false"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5174:80"
+    depends_on:
+      - api
+
