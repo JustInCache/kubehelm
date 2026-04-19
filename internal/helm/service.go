@@ -439,6 +439,10 @@ type helmChartEntry struct {
 	Icon        string   `yaml:"icon"`
 }
 
+// indexClient is a dedicated HTTP client for fetching repo index files.
+// A short timeout prevents a slow registry from blocking the request handler.
+var indexClient = &http.Client{Timeout: 15 * time.Second}
+
 // ListCharts fetches and parses the index.yaml of a Helm HTTP repository,
 // returning a flat list of chart versions grouped by chart name.
 func (s *Service) ListCharts(ctx context.Context, repoURL, username, password string) ([]types.ChartInfo, error) {
@@ -450,17 +454,26 @@ func (s *Service) ListCharts(ctx context.Context, repoURL, username, password st
 	if username != "" {
 		req.SetBasicAuth(username, password)
 	}
+	req.Header.Set("Accept", "application/yaml, text/yaml, */*")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := indexClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetch index.yaml: %w", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("index.yaml returned %d", resp.StatusCode)
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// ok
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return nil, fmt.Errorf("repository returned %d — check credentials", resp.StatusCode)
+	case http.StatusNotFound:
+		return nil, fmt.Errorf("index.yaml not found at %s — verify the repository URL", indexURL)
+	default:
+		return nil, fmt.Errorf("index.yaml returned unexpected status %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 32<<20)) // cap at 32 MB
 	if err != nil {
 		return nil, fmt.Errorf("read index.yaml: %w", err)
 	}
@@ -468,6 +481,9 @@ func (s *Service) ListCharts(ctx context.Context, repoURL, username, password st
 	var idx helmIndexFile
 	if err := yaml.Unmarshal(body, &idx); err != nil {
 		return nil, fmt.Errorf("parse index.yaml: %w", err)
+	}
+	if len(idx.Entries) == 0 {
+		return nil, fmt.Errorf("index.yaml parsed but contains no chart entries — the repository may be empty or the URL may point to the wrong path")
 	}
 
 	var out []types.ChartInfo
