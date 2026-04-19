@@ -14,6 +14,7 @@ import (
 	"github.com/ankushko/k8s-project-revamp/internal/config"
 	"github.com/ankushko/k8s-project-revamp/internal/middleware"
 	"github.com/ankushko/k8s-project-revamp/internal/service"
+	"github.com/ankushko/k8s-project-revamp/internal/version"
 )
 
 func NewRouter(svc *service.Service, logger *slog.Logger, cfg config.Config) http.Handler {
@@ -27,6 +28,9 @@ func NewRouter(svc *service.Service, logger *slog.Logger, cfg config.Config) htt
 
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "ts": time.Now().UTC().Format(time.RFC3339)})
+	})
+	r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, version.Get())
 	})
 	r.Get("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if !svc.Ready(r.Context()) {
